@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-gray-100 dark:bg-gray-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3498db',
+                        secondary: '#2ecc71',
+                        accent: '#3498db',
+                    }
+                }
+            }
+        }
+    </script>
+     <script type="importmap">
+        {
+            "imports": {
+                "@google/generative-ai": "https://esm.run/@google/generative-ai"
+            }
+        }
+    </script>
+</head>
+<body class="flex flex-col lg:flex-row min-h-screen text-gray-800 dark:text-gray-200 transition-colors duration-300">
+    <!-- Sidebar for large screens -->
+    <aside class="hidden lg:flex lg:flex-col lg:w-64 bg-gray-200 dark:bg-gray-800 p-4">
+        <h1 class="text-2xl font-bold text-center mb-8">Weather App</h1>
+        <nav class="space-y-4">
+            <button id="dashboard-btn-lg" class="w-full px-4 py-2 bg-primary text-white rounded hover:bg-secondary transition-colors">Dashboard</button>
+            <button id="tables-btn-lg" class="w-full px-4 py-2 bg-primary text-white rounded hover:bg-secondary transition-colors">Tables</button>
+        </nav>
+    </aside>
+
+    <!-- Main content area -->
+    <div class="flex-grow flex flex-col">
+        <!-- Header for small screens -->
+        <header class="lg:hidden bg-gray-200 dark:bg-gray-800 p-4">
+            <h1 class="text-2xl font-bold text-center mb-4">Weather App</h1>
+            <nav class="flex justify-center space-x-4">
+                <button id="dashboard-btn" class="px-4 py-2 bg-primary text-white rounded hover:bg-secondary transition-colors">Dashboard</button>
+                <button id="tables-btn" class="px-4 py-2 bg-primary text-white rounded hover:bg-secondary transition-colors">Tables</button>
+            </nav>
+        </header>
+
+        <!-- Main content -->
+        <main class="flex-grow p-4">
+            <!-- User icon -->
+            <div class="absolute top-4 right-4 w-10 h-10 bg-accent rounded-full flex items-center justify-center text-white font-bold">
+                H
+            </div>
+
+            <section id="dashboard" class="mb-8">
+                <form id="weather-form" class="mb-4 text-center">
+                    <input type="text" id="city-name" placeholder="Enter city name" class="px-4 py-2 rounded-l border-2 border-primary focus:outline-none focus:border-secondary dark:bg-gray-800 dark:text-white">
+                    <select id="units" class="px-4 py-2 border-2 border-primary focus:outline-none focus:border-secondary dark:bg-gray-800 dark:text-white">
+                        <option value="metric">Celsius</option>
+                        <option value="imperial">Fahrenheit</option>
+                    </select>
+                    <button type="submit" class="px-4 py-2 bg-accent text-white rounded-r hover:bg-secondary transition-colors">Get Weather</button>
+                </form>
+                <div id="weather-info" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+                    <!-- Removed margin-top and changed flex-col to flex-row -->
+                    <div class="text-2xl font-bold mb-4">
+                        <span id="city-display"></span>
+                    </div>
+                    <!-- Changed to flex-row and added justify-start -->
+                    <div id="current-weather" class="flex flex-row items-center justify-start"></div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+                        <canvas id="temperature-bar-chart"></canvas>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+                        <canvas id="weather-doughnut-chart"></canvas>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+                        <canvas id="temperature-line-chart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tables" class="hidden">
+                <h2 class="text-2xl font-bold mb-4">5-Day Weather Forecast</h2>
+                <div class="flex flex-col lg:flex-row justify-between mb-4">
+                    <!-- Changed width to full for both divs -->
+                    <div class="w-full lg:w-full mb-4 lg:mb-0 lg:pr-4">
+                        <div class="flex justify-between mb-4">
+                            <select id="sort-select" class="px-4 py-2 rounded border-2 border-primary focus:outline-none focus:border-secondary dark:bg-gray-800 dark:text-white">
+                                <option value="none">Sort by</option>
+                                <option value="asc">Sort Ascending</option>
+                                <option value="desc">Sort Descending</option>
+                            </select>
+                            <select id="filter-select" class="px-4 py-2 rounded border-2 border-primary focus:outline-none focus:border-secondary dark:bg-gray-800 dark:text-white">
+                                <option value="all">Show All</option>
+                                <option value="rain">Filter Rain</option>
+                            </select>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table id="forecast-table" class="w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+                                <thead>
+                                    <tr class="bg-primary text-white">
+                                        <th class="p-2">Date</th>
+                                        <th class="p-2">Time</th>
+                                        <th class="p-2">Temperature</th>
+                                        <th class="p-2">Condition</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                        <div class="flex justify-center mt-4">
+                            <button id="prev" class="px-4 py-2 bg-primary text-white rounded hover:bg-secondary transition-colors mr-2">Previous</button>
+                            <button id="next" class="px-4 py-2 bg-primary text-white rounded hover:bg-secondary transition-colors">Next</button>
+                        </div>
+                    </div>
+                    <!-- Changed width to full -->
+                    <div class="w-full lg:w-full lg:pl-4">
+                        <div id="chatbot" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+                            <h3 class="text-lg font-semibold mb-2">Chatbot</h3>
+                            <!-- Increased height to match table -->
+                            <div id="chat-output" class="h-64 overflow-y-auto border rounded p-2 bg-gray-100 dark:bg-gray-700 mb-4"></div>
+                            <form id="chat-form" class="flex">
+                                <input type="text" id="chat-input" placeholder="Ask about the weather..." class="flex-grow px-4 py-2 rounded-l border-2 border-primary focus:outline-none focus:border-secondary dark:bg-gray-800 dark:text-white">
+                                <button type="submit" class="px-4 py-2 bg-accent text-white rounded-r hover:bg-secondary transition-colors">Send</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="bg-gray-200 dark:bg-gray-800 text-center p-4">
+            <p>&copy; 2024 Weather App. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
